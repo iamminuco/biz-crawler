@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: biz-crawler
+    runtime: python
+    buildCommand: pip install -r requirements_cloud.txt
+    startCommand: gunicorn app_cloud:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: NAVER_CLIENT_ID
+        value: Nl6vxcaT0itBxJIoVZb5
+      - key: NAVER_CLIENT_SECRET
+        value: de7crjjMvE
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    plan: free

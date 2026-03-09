@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>업체 검색기</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+        h1 { text-align: center; margin: 30px 0 10px; font-size: 28px; color: #2c3e50; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 14px; }
+
+        .search-box {
+            background: #fff; border-radius: 12px; padding: 30px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 30px;
+        }
+        .search-box h2 { font-size: 18px; margin-bottom: 20px; color: #2c3e50; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
+
+        .checkbox-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+        }
+        .checkbox-grid label {
+            font-weight: normal; display: flex; align-items: center; gap: 6px;
+            padding: 6px 10px; background: #f8f9fa; border-radius: 6px; cursor: pointer;
+            font-size: 14px; transition: background 0.2s;
+        }
+        .checkbox-grid label:hover { background: #e8f4f8; }
+        .checkbox-grid input:checked + span { color: #2980b9; font-weight: bold; }
+
+        .custom-keyword {
+            width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px;
+            font-size: 14px; margin-top: 8px;
+        }
+        .custom-keyword:focus { outline: none; border-color: #3498db; }
+
+        .btn-row { display: flex; gap: 12px; margin-top: 20px; }
+        .btn {
+            padding: 12px 30px; border: none; border-radius: 8px; font-size: 15px;
+            cursor: pointer; font-weight: bold; transition: all 0.2s;
+        }
+        .btn-search { background: #3498db; color: #fff; flex: 1; }
+        .btn-search:hover { background: #2980b9; }
+        .btn-download { background: #27ae60; color: #fff; flex: 1; }
+        .btn-download:hover { background: #219a52; }
+        .btn:disabled { background: #bdc3c8; cursor: not-allowed; }
+
+        .select-btns { margin-bottom: 8px; }
+        .select-btns button {
+            background: none; border: 1px solid #ccc; padding: 4px 12px;
+            border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 6px;
+            color: #666;
+        }
+        .select-btns button:hover { border-color: #3498db; color: #3498db; }
+
+        .progress {
+            display: none; margin-top: 15px; padding: 15px;
+            background: #eaf6ff; border-radius: 8px; text-align: center;
+        }
+        .progress .spinner {
+            display: inline-block; width: 20px; height: 20px;
+            border: 3px solid #ddd; border-top-color: #3498db;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+            vertical-align: middle; margin-right: 10px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .results-box {
+            background: #fff; border-radius: 12px; padding: 30px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08); display: none;
+        }
+        .results-box h2 { font-size: 18px; margin-bottom: 15px; color: #2c3e50; }
+
+        .stats {
+            display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .stat-card {
+            background: #f8f9fa; padding: 12px 20px; border-radius: 8px;
+            text-align: center; min-width: 100px;
+        }
+        .stat-card .num { font-size: 24px; font-weight: bold; color: #3498db; }
+        .stat-card .label { font-size: 12px; color: #888; margin-top: 4px; }
+
+        table {
+            width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px;
+        }
+        thead th {
+            background: #2c3e50; color: #fff; padding: 10px 12px;
+            text-align: left; position: sticky; top: 0;
+        }
+        tbody td { padding: 9px 12px; border-bottom: 1px solid #eee; }
+        tbody tr:hover { background: #f5f9fc; }
+
+        .table-wrap { max-height: 500px; overflow-y: auto; border-radius: 8px; border: 1px solid #eee; }
+
+        .no-tel { color: #ccc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>장판 / 도배 / 줄눈 업체 검색기</h1>
+        <p class="subtitle">네이버 지역검색 API 기반 - 업종과 지역을 선택하고 검색하세요</p>
+
+        <div class="search-box">
+            <h2>검색 조건</h2>
+
+            <div class="form-group">
+                <label>업종 선택</label>
+                <div class="select-btns">
+                    <button type="button" onclick="toggleAll('keyword', true)">전체선택</button>
+                    <button type="button" onclick="toggleAll('keyword', false)">전체해제</button>
+                </div>
+                <div class="checkbox-grid" id="keywords">
+                    <label><input type="checkbox" name="keyword" value="장판시공" checked><span>장판시공</span></label>
+                    <label><input type="checkbox" name="keyword" value="장판업체" checked><span>장판업체</span></label>
+                    <label><input type="checkbox" name="keyword" value="도배업체" checked><span>도배업체</span></label>
+                    <label><input type="checkbox" name="keyword" value="도배시공" checked><span>도배시공</span></label>
+                    <label><input type="checkbox" name="keyword" value="줄눈시공" checked><span>줄눈시공</span></label>
+                    <label><input type="checkbox" name="keyword" value="줄눈업체" checked><span>줄눈업체</span></label>
+                </div>
+                <input type="text" class="custom-keyword" id="customKeyword"
+                       placeholder="추가 키워드 입력 (쉼표로 구분, 예: 타일시공, 싱크대업체)">
+            </div>
+
+            <div class="form-group">
+                <label>지역 선택</label>
+                <div class="select-btns">
+                    <button type="button" onclick="toggleAll('region', true)">전체선택</button>
+                    <button type="button" onclick="toggleAll('region', false)">전체해제</button>
+                </div>
+                <div class="checkbox-grid" id="regions">
+                    <label><input type="checkbox" name="region" value="서울" checked><span>서울</span></label>
+                    <label><input type="checkbox" name="region" value="경기" checked><span>경기</span></label>
+                    <label><input type="checkbox" name="region" value="인천" checked><span>인천</span></label>
+                    <label><input type="checkbox" name="region" value="부산" checked><span>부산</span></label>
+                    <label><input type="checkbox" name="region" value="대구"><span>대구</span></label>
+                    <label><input type="checkbox" name="region" value="대전"><span>대전</span></label>
+                    <label><input type="checkbox" name="region" value="광주"><span>광주</span></label>
+                    <label><input type="checkbox" name="region" value="울산"><span>울산</span></label>
+                    <label><input type="checkbox" name="region" value="세종"><span>세종</span></label>
+                    <label><input type="checkbox" name="region" value="수원"><span>수원</span></label>
+                    <label><input type="checkbox" name="region" value="성남"><span>성남</span></label>
+                    <label><input type="checkbox" name="region" value="고양"><span>고양</span></label>
+                    <label><input type="checkbox" name="region" value="용인"><span>용인</span></label>
+                    <label><input type="checkbox" name="region" value="창원"><span>창원</span></label>
+                    <label><input type="checkbox" name="region" value="천안"><span>천안</span></label>
+                    <label><input type="checkbox" name="region" value="전주"><span>전주</span></label>
+                    <label><input type="checkbox" name="region" value="청주"><span>청주</span></label>
+                    <label><input type="checkbox" name="region" value="제주"><span>제주</span></label>
+                    <label><input type="checkbox" name="region" value="포항"><span>포항</span></label>
+                    <label><input type="checkbox" name="region" value="김해"><span>김해</span></label>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-search" id="btnSearch" onclick="doSearch()">검색하기</button>
+                <button class="btn btn-download" id="btnDownload" onclick="doDownload()" disabled>엑셀 다운로드</button>
+            </div>
+
+            <div class="progress" id="progress">
+                <span class="spinner"></span>
+                <span id="progressText">검색 중입니다...</span>
+            </div>
+        </div>
+
+        <div class="results-box" id="resultsBox">
+            <h2>검색 결과</h2>
+            <div class="stats" id="stats"></div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>업종</th>
+                            <th>지역</th>
+                            <th>상호</th>
+                            <th>전화번호</th>
+                            <th>도로명주소</th>
+                            <th>카테고리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let lastResults = [];
+
+        function toggleAll(name, checked) {
+            document.querySelectorAll(`input[name="${name}"]`).forEach(cb => cb.checked = checked);
+        }
+
+        function getChecked(name) {
+            return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(cb => cb.value);
+        }
+
+        async function doSearch() {
+            const keywords = getChecked('keyword');
+            const regions = getChecked('region');
+
+            // 추가 키워드 처리
+            const custom = document.getElementById('customKeyword').value.trim();
+            if (custom) {
+                custom.split(',').map(s => s.trim()).filter(Boolean).forEach(k => keywords.push(k));
+            }
+
+            if (keywords.length === 0) { alert('업종을 1개 이상 선택하세요.'); return; }
+            if (regions.length === 0) { alert('지역을 1개 이상 선택하세요.'); return; }
+
+            const btn = document.getElementById('btnSearch');
+            const prog = document.getElementById('progress');
+            btn.disabled = true;
+            btn.textContent = '검색 중...';
+            prog.style.display = 'block';
+            document.getElementById('btnDownload').disabled = true;
+
+            const total = keywords.length * regions.length;
+            document.getElementById('progressText').textContent =
+                `총 ${total}개 조합 검색 중... (업종 ${keywords.length}개 x 지역 ${regions.length}개)`;
+
+            try {
+                const resp = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keywords, regions })
+                });
+                const data = await resp.json();
+
+                if (data.error) {
+                    alert('오류: ' + data.error);
+                    return;
+                }
+
+                lastResults = data.items;
+                renderResults(data);
+                document.getElementById('btnDownload').disabled = false;
+            } catch (e) {
+                alert('검색 실패: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '검색하기';
+                prog.style.display = 'none';
+            }
+        }
+
+        function renderResults(data) {
+            const box = document.getElementById('resultsBox');
+            box.style.display = 'block';
+
+            // 통계
+            const stats = document.getElementById('stats');
+            stats.innerHTML = `
+                <div class="stat-card">
+                    <div class="num">${data.total}</div>
+                    <div class="label">총 업체수</div>
+                </div>
+            `;
+            if (data.by_keyword) {
+                for (const [k, v] of Object.entries(data.by_keyword)) {
+                    stats.innerHTML += `
+                        <div class="stat-card">
+                            <div class="num">${v}</div>
+                            <div class="label">${k}</div>
+                        </div>`;
+                }
+            }
+
+            // 테이블
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            data.items.forEach((item, i) => {
+                const tel = item['전화번호'] || '<span class="no-tel">-</span>';
+                tbody.innerHTML += `<tr>
+                    <td>${i + 1}</td>
+                    <td>${item['업종']}</td>
+                    <td>${item['검색지역']}</td>
+                    <td>${item['상호']}</td>
+                    <td>${tel}</td>
+                    <td>${item['도로명주소'] || item['지번주소'] || '-'}</td>
+                    <td>${item['카테고리'] || '-'}</td>
+                </tr>`;
+            });
+        }
+
+        async function doDownload() {
+            if (lastResults.length === 0) { alert('먼저 검색을 해주세요.'); return; }
+
+            const btn = document.getElementById('btnDownload');
+            btn.disabled = true;
+            btn.textContent = '다운로드 준비 중...';
+
+            try {
+                const resp = await fetch('/api/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items: lastResults })
+                });
+
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '업체목록.xlsx';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert('다운로드 실패: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '엑셀 다운로드';
+            }
+        }
+    </script>
+</body>
+</html>

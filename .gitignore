@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+ngrok.exe
+ngrok.zip
+업체목록*.xlsx
+업체목록*.csv
